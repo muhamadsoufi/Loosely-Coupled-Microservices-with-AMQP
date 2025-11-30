@@ -1,6 +1,7 @@
 # Todo App - Microservices Architecture Demo
-(./Capture-01.PNG)
-(./Capture-02.PNG)
+
+![Capture 1](./Capture-01.PNG)
+![Capture 2](./Capture-02.PNG)
 
 A complete **microservices demo** showcasing a Todo application with **event-driven architecture** using RabbitMQ and embedded real-time notification dashboard.
 
