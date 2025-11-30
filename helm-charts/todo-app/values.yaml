@@ -11,7 +11,7 @@ todoApp:
   port: 5000
   
   service:
-    type: LoadBalancer
+    type: ClusterIP
     port: 5000
     targetPort: 5000
   
