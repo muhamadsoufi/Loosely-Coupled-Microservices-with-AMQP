@@ -1,0 +1,86 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: todo-app
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "todo-app.labels" . | nindent 4 }}
+    app: todo-app
+spec:
+  type: {{ .Values.todoApp.service.type }}
+  ports:
+    - port: {{ .Values.todoApp.service.port }}
+      targetPort: {{ .Values.todoApp.service.targetPort }}
+      protocol: TCP
+      name: http
+  selector:
+    app: todo-app
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: todo-app
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "todo-app.labels" . | nindent 4 }}
+    app: todo-app
+spec:
+  replicas: {{ .Values.todoApp.replicaCount }}
+  selector:
+    matchLabels:
+      app: todo-app
+  template:
+    metadata:
+      labels:
+        app: todo-app
+        {{- with .Values.todoApp.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- if .Values.todoApp.securityContext }}
+      securityContext:
+        {{- toYaml .Values.todoApp.securityContext | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: todo-app
+        image: {{ .Values.todoApp.image.repository }}:{{ .Values.todoApp.image.tag }}
+        imagePullPolicy: {{ .Values.todoApp.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.todoApp.port }}
+          name: http
+        env:
+        {{- range $key, $value := .Values.todoApp.env }}
+        - name: {{ $key }}
+          value: {{ $value | quote }}
+        {{- end }}
+        resources:
+          {{- toYaml .Values.todoApp.resources | nindent 12 }}
+        {{- if .Values.todoApp.livenessProbe.enabled }}
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.todoApp.livenessProbe.path }}
+            port: {{ .Values.todoApp.port }}
+          initialDelaySeconds: {{ .Values.todoApp.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.todoApp.livenessProbe.periodSeconds }}
+          timeoutSeconds: 5
+          failureThreshold: 3
+        {{- end }}
+        {{- if .Values.todoApp.readinessProbe.enabled }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.todoApp.readinessProbe.path }}
+            port: {{ .Values.todoApp.port }}
+          initialDelaySeconds: {{ .Values.todoApp.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.todoApp.readinessProbe.periodSeconds }}
+          timeoutSeconds: 5
+          failureThreshold: 3
+        {{- end }}
+      {{- with .Values.todoApp.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.todoApp.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -1,0 +1,13 @@
+apiVersion: v2
+name: mongodb
+description: MongoDB database for event-driven microservices
+type: application
+version: 1.0.0
+appVersion: "7.0"
+keywords:
+  - mongodb
+  - database
+  - nosql
+maintainers:
+  - name: DevOps Team
+    email: devops@example.com

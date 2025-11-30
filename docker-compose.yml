@@ -1,0 +1,121 @@
+services:
+  # RabbitMQ Service - Latest LTS 4.2.1 with advanced management UI
+  rabbitmq:
+    image: rabbitmq:4.2.1-management
+    container_name: todo-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+      - "15691:15691"
+      - "15692:15692"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_VHOST: /
+      RABBITMQ_MANAGEMENT_TCP_PORT: 15672
+    healthcheck:
+      test: rabbitmq-diagnostics ping -q
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - todo-network
+    restart: unless-stopped
+
+
+  # MongoDB Service
+  mongodb:
+    image: mongo:7.0
+    container_name: todo-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: dotnet-mongo-demo
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - todo-network
+    restart: unless-stopped
+    command: --quiet
+
+  # Todo App Service (ASP.NET + React UI - Single Service)
+  todo-app:
+    build:
+      context: ./TodoApp
+      dockerfile: Dockerfile
+      args:
+        BUILDKIT_INLINE_CACHE: "1"
+    container_name: todo-app
+    ports:
+      - "5000:5000"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      TODO_APP_MongoSettings__ConnectionString: "mongodb://mongodb:27017"
+      TODO_APP_MongoSettings__DbName: "dotnet-mongo-demo"
+      TODO_APP_MongoSettings__TodoCollection: "Todo"
+      TODO_APP_RabbitMQ__Host: "rabbitmq"
+      TODO_APP_RabbitMQ__Port: "5672"
+      TODO_APP_RabbitMQ__User: "guest"
+      TODO_APP_RabbitMQ__Password: "guest"
+      Logging__LogLevel__Default: "Information"
+      Logging__LogLevel__Microsoft: "Warning"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - todo-network
+    restart: unless-stopped
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:5000/ || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # Notification Service (Python) - with embedded UI dashboard
+  notification-service:
+    build:
+      context: ./notification-service
+      dockerfile: Dockerfile
+    container_name: notification-service
+    ports:
+      - "8000:8000"
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASSWORD: guest
+      RABBITMQ_VHOST: /
+      MONGODB_URI: "mongodb://mongodb:27017"
+      MONGODB_DB: "notifications"
+      NOTIFICATION_SERVICE_PORT: 8000
+      NOTIFICATION_SERVICE_HOST: "0.0.0.0"
+      LOG_LEVEL: "INFO"
+      ENVIRONMENT: "production"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    networks:
+      - todo-network
+    restart: unless-stopped
+    healthcheck:
+      test: python -c "import requests; requests.get('http://localhost:8000/health')" || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+networks:
+  todo-network:
+    driver: bridge
+
+

@@ -1,0 +1,13 @@
+apiVersion: v2
+name: rabbitmq
+description: RabbitMQ message broker for event-driven microservices
+type: application
+version: 1.0.0
+appVersion: "4.2.1"
+keywords:
+  - rabbitmq
+  - message-queue
+  - amqp
+maintainers:
+  - name: DevOps Team
+    email: devops@example.com

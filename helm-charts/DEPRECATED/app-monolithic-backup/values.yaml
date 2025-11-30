@@ -1,0 +1,197 @@
+# Global settings
+global:
+  namespace: microservices
+  environment: production
+
+# RabbitMQ Configuration
+rabbitmq:
+  enabled: true
+  image: rabbitmq:4.2.1-management
+  replicaCount: 1
+  port: 5672
+  managementPort: 15672
+  metricsPort: 15691
+  prometheusPort: 15692
+  auth:
+    user: guest
+    password: guest
+  persistence:
+    enabled: false
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  podAnnotations: {}
+  affinity: {}
+  tolerations: []
+
+# MongoDB Configuration
+mongodb:
+  enabled: true
+  image: mongo:7.0
+  replicaCount: 1
+  port: 27017
+  persistence:
+    enabled: false
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  podAnnotations: {}
+  affinity: {}
+  tolerations: []
+
+# Todo App Configuration (ASP.NET + React UI)
+todoApp:
+  enabled: true
+  image:
+    repository: dotnet-docker-todo-app
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicaCount: 1
+  port: 5000
+  service:
+    type: LoadBalancer
+    port: 5000
+    targetPort: 5000
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    hosts:
+      - host: todo.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: todo-tls
+        hosts:
+          - todo.example.com
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  env:
+    ASPNETCORE_ENVIRONMENT: Production
+    Logging__LogLevel__Default: Information
+    Logging__LogLevel__Microsoft: Warning
+  livenessProbe:
+    enabled: true
+    path: /
+    initialDelaySeconds: 30
+    periodSeconds: 10
+  readinessProbe:
+    enabled: true
+    path: /
+    initialDelaySeconds: 10
+    periodSeconds: 5
+  podAnnotations: {}
+  affinity: {}
+  tolerations: []
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    fsGroup: 1000
+
+# Notification Service Configuration
+notificationService:
+  enabled: true
+  image:
+    repository: notification-service
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicaCount: 1
+  port: 8000
+  service:
+    type: LoadBalancer
+    port: 8000
+    targetPort: 8000
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    hosts:
+      - host: notifications.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: notifications-tls
+        hosts:
+          - notifications.example.com
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 75
+    targetMemoryUtilizationPercentage: 80
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "50m"
+    limits:
+      memory: "256Mi"
+      cpu: "250m"
+  env:
+    ENVIRONMENT: production
+    LOG_LEVEL: INFO
+  livenessProbe:
+    enabled: true
+    path: /health
+    initialDelaySeconds: 15
+    periodSeconds: 10
+  readinessProbe:
+    enabled: true
+    path: /readiness
+    initialDelaySeconds: 5
+    periodSeconds: 5
+  podAnnotations: {}
+  affinity: {}
+  tolerations: []
+
+# Network Policies
+networkPolicy:
+  enabled: false
+  policyTypes:
+    - Ingress
+    - Egress
+
+# Pod Disruption Budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+# Service Account
+serviceAccount:
+  create: true
+  annotations: {}
+  name: microservices-sa
+
+# RBAC
+rbac:
+  create: true
+
+# Monitoring
+monitoring:
+  enabled: false
+  prometheus:
+    enabled: false
+  grafana:
+    enabled: false

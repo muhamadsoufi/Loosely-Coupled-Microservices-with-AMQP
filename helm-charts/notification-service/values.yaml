@@ -1,0 +1,53 @@
+global:
+  namespace: microservices
+
+notificationService:
+  image:
+    repository: notification-service
+    tag: latest
+    pullPolicy: IfNotPresent
+  
+  replicaCount: 1
+  port: 8000
+  
+  service:
+    type: LoadBalancer
+    port: 8000
+    targetPort: 8000
+  
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "50m"
+    limits:
+      memory: "256Mi"
+      cpu: "250m"
+  
+  env:
+    RABBITMQ_HOST: "rabbitmq"
+    RABBITMQ_PORT: "5672"
+    RABBITMQ_USER: "guest"
+    RABBITMQ_PASSWORD: "guest"
+    RABBITMQ_VHOST: "/"
+    MONGODB_URI: "mongodb://mongodb:27017"
+    MONGODB_DB: "notifications"
+    NOTIFICATION_SERVICE_PORT: "8000"
+    NOTIFICATION_SERVICE_HOST: "0.0.0.0"
+    ENVIRONMENT: "production"
+    LOG_LEVEL: "INFO"
+  
+  livenessProbe:
+    enabled: true
+    path: /health
+    initialDelaySeconds: 15
+    periodSeconds: 10
+  
+  readinessProbe:
+    enabled: true
+    path: /readiness
+    initialDelaySeconds: 5
+    periodSeconds: 5
+  
+  podAnnotations: {}
+  affinity: {}
+  tolerations: []

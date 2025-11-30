@@ -1,0 +1,15 @@
+apiVersion: v2
+name: microservices-app
+description: Complete microservices stack with Todo App, Notification Service, RabbitMQ, and MongoDB
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - todo
+  - microservices
+  - rabbitmq
+  - mongodb
+  - notification
+maintainers:
+  - name: DevOps Team
+    email: devops@example.com

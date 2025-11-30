@@ -1,0 +1,189 @@
+{{- if .Values.notificationService.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-service
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "microservices.labels" . | nindent 4 }}
+    app: notification-service
+spec:
+  type: {{ .Values.notificationService.service.type }}
+  ports:
+    - port: {{ .Values.notificationService.service.port }}
+      targetPort: {{ .Values.notificationService.service.targetPort }}
+      protocol: TCP
+  selector:
+    app: notification-service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-service
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "microservices.labels" . | nindent 4 }}
+    app: notification-service
+spec:
+  replicas: {{ .Values.notificationService.replicaCount }}
+  selector:
+    matchLabels:
+      app: notification-service
+  template:
+    metadata:
+      labels:
+        app: notification-service
+        {{- with .Values.notificationService.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ include "microservices.serviceAccountName" . }}
+      containers:
+      - name: notification-service
+        image: {{ .Values.notificationService.image.repository }}:{{ .Values.notificationService.image.tag }}
+        imagePullPolicy: {{ .Values.notificationService.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.notificationService.port }}
+        env:
+        - name: RABBITMQ_HOST
+          value: "rabbitmq"
+        - name: RABBITMQ_PORT
+          value: "5672"
+        - name: RABBITMQ_USER
+          value: "guest"
+        - name: RABBITMQ_PASSWORD
+          value: "guest"
+        - name: RABBITMQ_VHOST
+          value: "/"
+        - name: MONGODB_URI
+          value: "mongodb://mongodb:27017"
+        - name: MONGODB_DB
+          value: "notifications"
+        - name: NOTIFICATION_SERVICE_PORT
+          value: "8000"
+        - name: NOTIFICATION_SERVICE_HOST
+          value: "0.0.0.0"
+        - name: LOG_LEVEL
+          value: {{ .Values.notificationService.env.LOG_LEVEL | quote }}
+        - name: ENVIRONMENT
+          value: {{ .Values.notificationService.env.ENVIRONMENT | quote }}
+        resources:
+          {{- toYaml .Values.notificationService.resources | nindent 12 }}
+        {{- if .Values.notificationService.livenessProbe.enabled }}
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.notificationService.livenessProbe.path }}
+            port: {{ .Values.notificationService.port }}
+          initialDelaySeconds: {{ .Values.notificationService.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.notificationService.livenessProbe.periodSeconds }}
+          timeoutSeconds: 5
+          failureThreshold: 3
+        {{- end }}
+        {{- if .Values.notificationService.readinessProbe.enabled }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.notificationService.readinessProbe.path }}
+            port: {{ .Values.notificationService.port }}
+          initialDelaySeconds: {{ .Values.notificationService.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.notificationService.readinessProbe.periodSeconds }}
+          timeoutSeconds: 5
+          failureThreshold: 3
+        {{- end }}
+      {{- with .Values.notificationService.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.notificationService.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+{{- if .Values.notificationService.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: notification-service-hpa
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "microservices.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: notification-service
+  minReplicas: {{ .Values.notificationService.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.notificationService.autoscaling.maxReplicas }}
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: {{ .Values.notificationService.autoscaling.targetCPUUtilizationPercentage }}
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: {{ .Values.notificationService.autoscaling.targetMemoryUtilizationPercentage }}
+{{- end }}
+---
+{{- if .Values.notificationService.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: notification-service-ingress
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "microservices.labels" . | nindent 4 }}
+  {{- with .Values.notificationService.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if .Values.notificationService.ingress.className }}
+  ingressClassName: {{ .Values.notificationService.ingress.className }}
+  {{- end }}
+  {{- if .Values.notificationService.ingress.tls }}
+  tls:
+    {{- range .Values.notificationService.ingress.tls }}
+    - hosts:
+        {{- range .hosts }}
+        - {{ . | quote }}
+        {{- end }}
+      secretName: {{ .secretName }}
+    {{- end }}
+  {{- end }}
+  rules:
+    {{- range .Values.notificationService.ingress.hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType }}
+            backend:
+              service:
+                name: notification-service
+                port:
+                  number: {{ $.Values.notificationService.service.port }}
+          {{- end }}
+    {{- end }}
+{{- end }}
+---
+{{- if .Values.podDisruptionBudget.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: notification-service-pdb
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "microservices.labels" . | nindent 4 }}
+spec:
+  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      app: notification-service
+{{- end }}
+{{- end }}

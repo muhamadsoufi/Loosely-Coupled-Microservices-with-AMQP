@@ -1,0 +1,30 @@
+global:
+  namespace: microservices
+
+rabbitmq:
+  image: rabbitmq:4.2.1-management
+  replicaCount: 1
+  port: 5672
+  managementPort: 15672
+  metricsPort: 15691
+  prometheusPort: 15692
+  
+  auth:
+    user: guest
+    password: guest
+  
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  
+  persistence:
+    enabled: false
+    size: 10Gi
+  
+  podAnnotations: {}
+  affinity: {}
+  tolerations: []

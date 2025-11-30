@@ -1,0 +1,57 @@
+global:
+  namespace: microservices
+
+todoApp:
+  image:
+    repository: dotnet-docker-todo-app
+    tag: latest
+    pullPolicy: IfNotPresent
+  
+  replicaCount: 1
+  port: 5000
+  
+  service:
+    type: LoadBalancer
+    port: 5000
+    targetPort: 5000
+  
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  
+  env:
+    ASPNETCORE_ENVIRONMENT: Production
+    Logging__LogLevel__Default: Information
+    Logging__LogLevel__Microsoft: Warning
+    TODO_APP_MongoSettings__ConnectionString: "mongodb://mongodb:27017"
+    TODO_APP_MongoSettings__DbName: "dotnet-mongo-demo"
+    TODO_APP_MongoSettings__TodoCollection: "Todo"
+    TODO_APP_RabbitMQ__Host: "rabbitmq"
+    TODO_APP_RabbitMQ__Port: "5672"
+    TODO_APP_RabbitMQ__User: "guest"
+    TODO_APP_RabbitMQ__Password: "guest"
+  
+  livenessProbe:
+    enabled: true
+    path: /
+    initialDelaySeconds: 30
+    periodSeconds: 10
+  
+  readinessProbe:
+    enabled: true
+    path: /
+    initialDelaySeconds: 10
+    periodSeconds: 5
+  
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    fsGroup: 1000
+  
+  podAnnotations: {}
+  affinity: {}
+  tolerations: []

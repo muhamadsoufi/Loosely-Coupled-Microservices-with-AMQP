@@ -1,0 +1,95 @@
+name: Build & Push TodoApp to ECR
+
+on:
+  workflow_dispatch:
+#  push:
+#    branches:
+#      - main
+#    paths:
+#      - 'TodoApp/**'
+#      - '.github/workflows/build-todo-app.yml'
+
+env:
+  ECR_REPOSITORY: eks_foundation_stack_repo
+  IMAGE_TAG: ${{ github.sha }}
+  AWS_REGION: us-east-1
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      id-token: write
+      contents: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/GitHubActions-Infra-Deployer-Role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build Docker image
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          cd TodoApp
+          docker build -t $REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+                       -t $REGISTRY/$ECR_REPOSITORY:latest .
+          echo "IMAGE_URI=$REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_ENV
+          echo "REGISTRY=$REGISTRY" >> $GITHUB_ENV
+
+      - name: Push image to Amazon ECR
+        run: |
+          docker push ${{ env.REGISTRY }}/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push ${{ env.REGISTRY }}/$ECR_REPOSITORY:latest
+          echo "Image pushed: ${{ env.IMAGE_URI }}"
+
+      - name: Update Helm values
+        run: |
+          # Update the image tag in todo-app values.yaml
+          sed -i "s|tag: .*|tag: $IMAGE_TAG|g" helm-charts/todo-app/values.yaml
+          sed -i "s|repository: .*|repository: ${{ env.REGISTRY }}/$ECR_REPOSITORY|g" helm-charts/todo-app/values.yaml
+          
+          # Verify changes
+          cat helm-charts/todo-app/values.yaml | grep -A 2 "image:"
+
+      - name: Commit and push to prod branch
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          
+          # Create or checkout prod branch
+          git fetch origin prod 2>/dev/null || echo "prod branch does not exist"
+          git checkout -b prod origin/prod 2>/dev/null || git checkout -b prod
+          
+          # Rebase with main to get latest TodoApp code
+          git rebase origin/main
+          
+          # Commit the helm values update
+          if git diff --quiet; then
+            echo "No changes to commit"
+          else
+            git add helm-charts/todo-app/values.yaml
+            git commit -m "chore: update todo-app image tag to $IMAGE_TAG [skip ci]"
+            git push origin prod
+            echo "✅ Updated prod branch with new image tag"
+          fi
+
+      - name: Slack Notification (Optional)
+        if: always()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: "TodoApp Build: ${{ job.status }}\nImage: ${{ env.IMAGE_URI }}\nCommit: ${{ github.sha }}"
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+        continue-on-error: true

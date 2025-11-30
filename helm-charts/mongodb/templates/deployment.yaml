@@ -1,0 +1,80 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "mongodb.labels" . | nindent 4 }}
+    app: mongodb
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.mongodb.port }}
+      targetPort: {{ .Values.mongodb.port }}
+      protocol: TCP
+      name: mongodb
+  selector:
+    app: mongodb
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodb
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "mongodb.labels" . | nindent 4 }}
+    app: mongodb
+spec:
+  replicas: {{ .Values.mongodb.replicaCount }}
+  selector:
+    matchLabels:
+      app: mongodb
+  template:
+    metadata:
+      labels:
+        app: mongodb
+        {{- with .Values.mongodb.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      containers:
+      - name: mongodb
+        image: {{ .Values.mongodb.image }}
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: {{ .Values.mongodb.port }}
+          name: mongodb
+        env:
+        - name: MONGO_INITDB_DATABASE
+          value: "dotnet-mongo-demo"
+        resources:
+          {{- toYaml .Values.mongodb.resources | nindent 12 }}
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 5
+          failureThreshold: 3
+      {{- with .Values.mongodb.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.mongodb.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

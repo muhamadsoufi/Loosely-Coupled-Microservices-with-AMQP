@@ -1,0 +1,191 @@
+{{- if .Values.todoApp.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: todo-app
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "microservices.labels" . | nindent 4 }}
+    app: todo-app
+spec:
+  type: {{ .Values.todoApp.service.type }}
+  ports:
+    - port: {{ .Values.todoApp.service.port }}
+      targetPort: {{ .Values.todoApp.service.targetPort }}
+      protocol: TCP
+  selector:
+    app: todo-app
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: todo-app
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "microservices.labels" . | nindent 4 }}
+    app: todo-app
+spec:
+  replicas: {{ .Values.todoApp.replicaCount }}
+  selector:
+    matchLabels:
+      app: todo-app
+  template:
+    metadata:
+      labels:
+        app: todo-app
+        {{- with .Values.todoApp.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ include "microservices.serviceAccountName" . }}
+      {{- if .Values.todoApp.securityContext }}
+      securityContext:
+        {{- toYaml .Values.todoApp.securityContext | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: todo-app
+        image: {{ .Values.todoApp.image.repository }}:{{ .Values.todoApp.image.tag }}
+        imagePullPolicy: {{ .Values.todoApp.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.todoApp.port }}
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          value: {{ .Values.todoApp.env.ASPNETCORE_ENVIRONMENT | quote }}
+        - name: TODO_APP_MongoSettings__ConnectionString
+          value: "mongodb://mongodb:27017"
+        - name: TODO_APP_MongoSettings__DbName
+          value: "dotnet-mongo-demo"
+        - name: TODO_APP_MongoSettings__TodoCollection
+          value: "Todo"
+        - name: TODO_APP_RabbitMQ__Host
+          value: "rabbitmq"
+        - name: TODO_APP_RabbitMQ__Port
+          value: "5672"
+        - name: TODO_APP_RabbitMQ__User
+          value: "guest"
+        - name: TODO_APP_RabbitMQ__Password
+          value: "guest"
+        - name: Logging__LogLevel__Default
+          value: {{ .Values.todoApp.env.Logging__LogLevel__Default | quote }}
+        - name: Logging__LogLevel__Microsoft
+          value: {{ .Values.todoApp.env.Logging__LogLevel__Microsoft | quote }}
+        resources:
+          {{- toYaml .Values.todoApp.resources | nindent 12 }}
+        {{- if .Values.todoApp.livenessProbe.enabled }}
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.todoApp.livenessProbe.path }}
+            port: {{ .Values.todoApp.port }}
+          initialDelaySeconds: {{ .Values.todoApp.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.todoApp.livenessProbe.periodSeconds }}
+          timeoutSeconds: 5
+          failureThreshold: 3
+        {{- end }}
+        {{- if .Values.todoApp.readinessProbe.enabled }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.todoApp.readinessProbe.path }}
+            port: {{ .Values.todoApp.port }}
+          initialDelaySeconds: {{ .Values.todoApp.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.todoApp.readinessProbe.periodSeconds }}
+          timeoutSeconds: 5
+          failureThreshold: 3
+        {{- end }}
+      {{- with .Values.todoApp.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.todoApp.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+{{- if .Values.todoApp.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: todo-app-hpa
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "microservices.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: todo-app
+  minReplicas: {{ .Values.todoApp.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.todoApp.autoscaling.maxReplicas }}
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: {{ .Values.todoApp.autoscaling.targetCPUUtilizationPercentage }}
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: {{ .Values.todoApp.autoscaling.targetMemoryUtilizationPercentage }}
+{{- end }}
+---
+{{- if .Values.todoApp.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: todo-app-ingress
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "microservices.labels" . | nindent 4 }}
+  {{- with .Values.todoApp.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if .Values.todoApp.ingress.className }}
+  ingressClassName: {{ .Values.todoApp.ingress.className }}
+  {{- end }}
+  {{- if .Values.todoApp.ingress.tls }}
+  tls:
+    {{- range .Values.todoApp.ingress.tls }}
+    - hosts:
+        {{- range .hosts }}
+        - {{ . | quote }}
+        {{- end }}
+      secretName: {{ .secretName }}
+    {{- end }}
+  {{- end }}
+  rules:
+    {{- range .Values.todoApp.ingress.hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType }}
+            backend:
+              service:
+                name: todo-app
+                port:
+                  number: {{ $.Values.todoApp.service.port }}
+          {{- end }}
+    {{- end }}
+{{- end }}
+---
+{{- if .Values.podDisruptionBudget.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: todo-app-pdb
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "microservices.labels" . | nindent 4 }}
+spec:
+  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      app: todo-app
+{{- end }}
+{{- end }}

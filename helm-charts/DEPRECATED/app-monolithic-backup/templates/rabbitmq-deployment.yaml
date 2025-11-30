@@ -1,0 +1,112 @@
+{{- if .Values.rabbitmq.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "microservices.labels" . | nindent 4 }}
+    app: rabbitmq
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.rabbitmq.port }}
+      targetPort: {{ .Values.rabbitmq.port }}
+      protocol: TCP
+      name: amqp
+    - port: {{ .Values.rabbitmq.managementPort }}
+      targetPort: {{ .Values.rabbitmq.managementPort }}
+      protocol: TCP
+      name: management
+    - port: {{ .Values.rabbitmq.metricsPort }}
+      targetPort: {{ .Values.rabbitmq.metricsPort }}
+      protocol: TCP
+      name: metrics
+    - port: {{ .Values.rabbitmq.prometheusPort }}
+      targetPort: {{ .Values.rabbitmq.prometheusPort }}
+      protocol: TCP
+      name: prometheus
+  selector:
+    app: rabbitmq
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rabbitmq
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "microservices.labels" . | nindent 4 }}
+    app: rabbitmq
+spec:
+  replicas: {{ .Values.rabbitmq.replicaCount }}
+  selector:
+    matchLabels:
+      app: rabbitmq
+  template:
+    metadata:
+      labels:
+        app: rabbitmq
+        {{- with .Values.rabbitmq.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ include "microservices.serviceAccountName" . }}
+      containers:
+      - name: rabbitmq
+        image: {{ .Values.rabbitmq.image }}
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: amqp
+          containerPort: {{ .Values.rabbitmq.port }}
+        - name: management
+          containerPort: {{ .Values.rabbitmq.managementPort }}
+        - name: metrics
+          containerPort: {{ .Values.rabbitmq.metricsPort }}
+        - name: prometheus
+          containerPort: {{ .Values.rabbitmq.prometheusPort }}
+        env:
+        - name: RABBITMQ_DEFAULT_USER
+          value: {{ .Values.rabbitmq.auth.user | quote }}
+        - name: RABBITMQ_DEFAULT_PASS
+          value: {{ .Values.rabbitmq.auth.password | quote }}
+        - name: RABBITMQ_MANAGEMENT_TCP_PORT
+          value: {{ .Values.rabbitmq.managementPort | quote }}
+        resources:
+          {{- toYaml .Values.rabbitmq.resources | nindent 12 }}
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - rabbitmq-diagnostics -q ping
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - rabbitmq-diagnostics -q ping
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 5
+          failureThreshold: 3
+        volumeMounts:
+        - name: config
+          mountPath: /etc/rabbitmq
+      volumes:
+      - name: config
+        configMap:
+          name: rabbitmq-config
+      {{- with .Values.rabbitmq.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.rabbitmq.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
