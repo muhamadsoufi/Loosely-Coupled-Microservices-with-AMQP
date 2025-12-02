@@ -79,9 +79,11 @@ jobs:
           
           # Merge main into prod
           if ! git merge --no-ff origin/main -m "Merge main into prod [skip ci]"; then
-            # On merge conflict, keep our version of Helm values
+            # On merge conflict, keep our version of ALL Helm values
             echo "Resolving merge conflicts..."
+            git checkout --ours helm-charts/notification-service/values.yaml
             git checkout --ours helm-charts/todo-app/values.yaml
+            git add helm-charts/notification-service/values.yaml
             git add helm-charts/todo-app/values.yaml
             git commit -m "Merge main into prod - resolved conflicts [skip ci]"
           fi
