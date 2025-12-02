@@ -69,24 +69,20 @@ jobs:
           git config user.email "actions@github.com"
           git remote set-url origin https://x-access-token:${TOKEN}@github.com/${{ github.repository }}.git
           
-          # Commit the helm values update first on current branch
-          git add helm-charts/todo-app/values.yaml
-          git commit -m "chore: update todo-app image tag to $IMAGE_TAG [skip ci]" || echo "No changes to commit"
+          # Save the helm values changes
+          MAIN_COMMIT=$(git rev-parse HEAD)
           
-          # Fetch prod branch
+          # Fetch and checkout prod branch
           git fetch origin prod 2>/dev/null || echo "prod branch does not exist"
           git checkout -b prod origin/prod 2>/dev/null || git checkout prod
           
-          # Merge main into prod
-          if ! git merge --no-ff origin/main -m "Merge main into prod [skip ci]"; then
-            # On merge conflict, keep our version of ALL Helm values
-            echo "Resolving merge conflicts..."
-            git checkout --ours helm-charts/notification-service/values.yaml
-            git checkout --ours helm-charts/todo-app/values.yaml
-            git add helm-charts/notification-service/values.yaml
-            git add helm-charts/todo-app/values.yaml
-            git commit -m "Merge main into prod - resolved conflicts [skip ci]"
-          fi
+          # Merge main with their strategy (accept all incoming changes)
+          git merge -X theirs --no-ff origin/main -m "Merge main into prod [skip ci]"
+          
+          # Now apply our Helm values from main
+          git checkout $MAIN_COMMIT -- helm-charts/todo-app/values.yaml
+          git add helm-charts/todo-app/values.yaml
+          git commit -m "chore: update todo-app image tag to $IMAGE_TAG [skip ci]" || echo "No changes"
           
           git push origin prod --force-with-lease
           echo "✅ Updated prod branch with new image tag"
