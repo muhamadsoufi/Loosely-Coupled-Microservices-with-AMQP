@@ -4,7 +4,11 @@ global:
 notificationService:
   image:
     repository: 940482451690.dkr.ecr.us-east-1.amazonaws.com/eks_foundation_stack_repo
+<<<<<<< Updated upstream
     tag: 661a60e0185d00054563605378bbb37d9e93fb46
+=======
+    tag: notifservice-61ad2ed358de5a522acb6dc1a0dafd3387ac2631
+>>>>>>> Stashed changes
     pullPolicy: IfNotPresent
   
   replicaCount: 1
