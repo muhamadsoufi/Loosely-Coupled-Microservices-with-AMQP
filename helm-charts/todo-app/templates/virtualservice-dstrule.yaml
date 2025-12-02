@@ -2,7 +2,7 @@ apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
   name: todo-vs
-  namespace: prod
+  namespace: microservices
 spec:
   hosts:
     - "todo.cicd.click"
@@ -21,7 +21,7 @@ apiVersion: networking.istio.io/v1beta1
 kind: DestinationRule
 metadata:
   name: microservices-mtls
-  namespace: prod
+  namespace: microservices
 spec:
   host: microservices
   trafficPolicy:

@@ -2,7 +2,7 @@ apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
   name: notificationservice-vs
-  namespace: prod
+  namespace: microservices
 spec:
   hosts:
     - "notificationservice.cicd.click"
@@ -19,7 +19,7 @@ apiVersion: networking.istio.io/v1beta1
 kind: DestinationRule
 metadata:
   name: notificationservice-mtls
-  namespace: prod
+  namespace: microservices
 spec:
   host: notification-service
   trafficPolicy:
