@@ -43,22 +43,20 @@ jobs:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
           cd notification-service
-          docker build -t $REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
-                       -t $REGISTRY/$ECR_REPOSITORY:latest .
-          echo "IMAGE_URI=$REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_ENV
+          docker build -t $REGISTRY/notifservice:$IMAGE_TAG .
+          echo "IMAGE_URI=$REGISTRY/notifservice:$IMAGE_TAG" >> $GITHUB_ENV
           echo "REGISTRY=$REGISTRY" >> $GITHUB_ENV
 
       - name: Push image to Amazon ECR
         run: |
-          docker push ${{ env.REGISTRY }}/$ECR_REPOSITORY:$IMAGE_TAG
-          docker push ${{ env.REGISTRY }}/$ECR_REPOSITORY:latest
+          docker push ${{ env.REGISTRY }}/notifservice:$IMAGE_TAG
           echo "Image pushed: ${{ env.IMAGE_URI }}"
 
       - name: Update Helm values
         run: |
           # Update the image tag in notification-service values.yaml
           sed -i "s|tag: .*|tag: $IMAGE_TAG|g" helm-charts/notification-service/values.yaml
-          sed -i "s|repository: .*|repository: ${{ env.REGISTRY }}/$ECR_REPOSITORY|g" helm-charts/notification-service/values.yaml
+          sed -i "s|repository: .*|repository: ${{ env.REGISTRY }}/notifservice|g" helm-charts/notification-service/values.yaml
           
           # Verify changes
           cat helm-charts/notification-service/values.yaml | grep -A 2 "image:"
