@@ -5,9 +5,13 @@ todoApp:
   image:
     repository: 940482451690.dkr.ecr.us-east-1.amazonaws.com/eks_foundation_stack_repo
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     tag: 661a60e0185d00054563605378bbb37d9e93fb46
 =======
     tag: todoapp-61ad2ed358de5a522acb6dc1a0dafd3387ac2631
+>>>>>>> Stashed changes
+=======
+    tag: todoapp-04c855a0023dc88c4f9b4cabdb15c6181410f81d
 >>>>>>> Stashed changes
     pullPolicy: IfNotPresent
   
