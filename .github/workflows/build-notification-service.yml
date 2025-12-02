@@ -68,12 +68,18 @@ jobs:
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           
+          # Stash any uncommitted changes before switching branches
+          git stash
+          
           # Create or checkout prod branch
           git fetch origin prod 2>/dev/null || echo "prod branch does not exist"
-          git checkout -b prod origin/prod 2>/dev/null || git checkout -b prod
+          git checkout -b prod origin/prod 2>/dev/null || git checkout prod
           
           # Rebase with main to get latest notification-service code
-          git rebase origin/main
+          git rebase origin/main || git rebase --abort
+          
+          # Pop the stashed changes
+          git stash pop || true
           
           # Commit the helm values update
           if git diff --quiet; then
@@ -91,5 +97,5 @@ jobs:
         with:
           status: ${{ job.status }}
           text: "NotificationService Build: ${{ job.status }}\nImage: ${{ env.IMAGE_URI }}\nCommit: ${{ github.sha }}"
-          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
         continue-on-error: true
