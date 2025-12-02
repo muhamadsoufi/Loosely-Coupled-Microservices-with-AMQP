@@ -10,3 +10,4 @@ data:
     vm_memory_high_watermark.relative = 0.6
     channel_max = 2048
     heartbeat = 60
+    loopback_users.guest = false
