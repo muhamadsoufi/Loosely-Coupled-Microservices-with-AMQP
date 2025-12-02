@@ -70,13 +70,13 @@ jobs:
           git config merge.ours.driver true
           git remote set-url origin https://x-access-token:${TOKEN}@github.com/${{ github.repository }}.git
           
+          # Commit the helm values update first on current branch
+          git add helm-charts/todo-app/values.yaml
+          git commit -m "chore: update todo-app image tag to $IMAGE_TAG [skip ci]" || echo "No changes to commit"
+          
           # Fetch prod branch
           git fetch origin prod 2>/dev/null || echo "prod branch does not exist"
           git checkout -b prod origin/prod 2>/dev/null || git checkout prod
-          
-          # Commit the helm values update first
-          git add helm-charts/todo-app/values.yaml
-          git commit -m "chore: update todo-app image tag to $IMAGE_TAG [skip ci]" || echo "No changes to commit"
           
           # Merge main into prod, keeping our Helm values
           git merge --no-ff origin/main -m "Merge main into prod [skip ci]" || {
