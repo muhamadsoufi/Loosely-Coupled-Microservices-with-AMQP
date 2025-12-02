@@ -375,10 +375,46 @@ dotnet-docker/
 │   ├── static/
 │   │   └── index.html                 # Dashboard UI
 │   └── requirements.txt                # Python dependencies
-├── helm-charts/app/                   # Kubernetes Helm chart
+```
+helm-charts/
+├── rabbitmq/               # RabbitMQ message broker
 │   ├── Chart.yaml
-│   ├── values.yaml                    # Configuration values
-│   └── templates/                     # Kubernetes manifests
+│   ├── values.yaml
+│   └── templates/
+│       ├── namespace.yaml
+│       ├── configmap.yaml
+│       ├── deployment.yaml
+│       ├── _helpers.tpl
+│       
+├── mongodb/                # MongoDB NoSQL database
+│   ├── Chart.yaml
+│   ├── values.yaml
+│   └── templates/
+│       ├── namespace.yaml
+│       ├── deployment.yaml
+│       ├── _helpers.tpl
+│       
+├── todo-app/               # ASP.NET Core + React frontend
+│   ├── Chart.yaml
+│   ├── values.yaml
+│   └── templates/
+│       ├── namespace.yaml
+│       ├── deployment.yaml
+│       ├── _helpers.tpl
+│       
+├── notification-service/   # Python FastAPI consumer
+│   ├── Chart.yaml
+│   ├── values.yaml
+│   └── templates/
+│       ├── namespace.yaml
+│       ├── deployment.yaml
+│       ├── _helpers.tpl
+│       
+└── app/                    # (OLD) Monolithic chart - can be deprecated
+    ├── Chart.yaml
+    ├── values.yaml
+    └── templates/
+```
 ├── docker-compose.yml                 # Docker multi-container setup
 └── README.md                          # This file
 ```

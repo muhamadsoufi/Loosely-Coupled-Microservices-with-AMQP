@@ -3,15 +3,15 @@ global:
 
 todoApp:
   image:
-    repository: dotnet-docker-todo-app
-    tag: latest
+    repository: 940482451690.dkr.ecr.us-east-1.amazonaws.com/eks_foundation_stack_repo
+    tag: todoapp-be9d1410ac4fb2cc530413487ee73eb730d4bf74
     pullPolicy: IfNotPresent
   
   replicaCount: 1
   port: 5000
   
   service:
-    type: LoadBalancer
+    type: ClusterIP
     port: 5000
     targetPort: 5000
   
