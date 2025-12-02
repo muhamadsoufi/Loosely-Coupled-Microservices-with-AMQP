@@ -1,0 +1,27 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: notificationservice-vs
+  namespace: prod
+spec:
+  hosts:
+    - "notificationservice.cicd.click"
+  gateways:
+    - "istio-system/main-gateway"
+  http:
+    - route:
+        - destination:
+            host: notification-service
+            port: 
+              number: 8000
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: notificationservice-mtls
+  namespace: prod
+spec:
+  host: notification-service
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL

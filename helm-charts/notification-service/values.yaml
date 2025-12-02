@@ -3,7 +3,7 @@ global:
 
 notificationService:
   image:
-    repository: notification-service
+    repository: 940482451690.dkr.ecr.us-east-1.amazonaws.com/eks_foundation_stack_repo
     tag: latest
     pullPolicy: IfNotPresent
   
