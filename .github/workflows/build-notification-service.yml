@@ -69,28 +69,27 @@ jobs:
           git config user.email "actions@github.com"
           git remote set-url origin https://x-access-token:${TOKEN}@github.com/${{ github.repository }}.git
           
-          # Stash any uncommitted changes before switching branches
-          git stash
+          # Commit the helm values update first on current branch
+          git add helm-charts/notification-service/values.yaml
+          git commit -m "chore: update notification-service image tag to $IMAGE_TAG [skip ci]" || echo "No changes to commit"
           
-          # Create or checkout prod branch
+          # Fetch prod branch
           git fetch origin prod 2>/dev/null || echo "prod branch does not exist"
           git checkout -b prod origin/prod 2>/dev/null || git checkout prod
           
-          # Rebase with main to get latest notification-service code
-          git rebase origin/main || git rebase --abort
-          
-          # Pop the stashed changes
-          git stash pop || true
-          
-          # Commit the helm values update
-          if git diff --quiet; then
-            echo "No changes to commit"
-          else
+          # Merge main into prod
+          if ! git merge --no-ff origin/main -m "Merge main into prod [skip ci]"; then
+            # On merge conflict, keep our version of ALL Helm values
+            echo "Resolving merge conflicts..."
+            git checkout --ours helm-charts/notification-service/values.yaml
+            git checkout --ours helm-charts/todo-app/values.yaml
             git add helm-charts/notification-service/values.yaml
-            git commit -m "chore: update notification-service image tag to $IMAGE_TAG [skip ci]"
-            git push origin prod --force-with-lease
-            echo "✅ Updated prod branch with new image tag"
+            git add helm-charts/todo-app/values.yaml
+            git commit -m "Merge main into prod - resolved conflicts [skip ci]"
           fi
+          
+          git push origin prod --force-with-lease
+          echo "✅ Updated prod branch with new image tag"
 
       - name: Slack Notification (Optional)
         if: always()
