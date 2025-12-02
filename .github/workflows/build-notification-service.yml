@@ -69,7 +69,9 @@ jobs:
           git config user.email "actions@github.com"
           git remote set-url origin https://x-access-token:${TOKEN}@github.com/${{ github.repository }}.git
           
-          # Save the helm values changes
+          # Commit the helm values changes on main branch
+          git add helm-charts/notification-service/values.yaml
+          git commit -m "chore: update notification-service image tag to $IMAGE_TAG [skip ci]" || echo "No changes to commit"
           MAIN_COMMIT=$(git rev-parse HEAD)
           
           # Fetch and checkout prod branch
@@ -82,7 +84,7 @@ jobs:
           # Now apply our Helm values from main
           git checkout $MAIN_COMMIT -- helm-charts/notification-service/values.yaml
           git add helm-charts/notification-service/values.yaml
-          git commit -m "chore: update notification-service image tag to $IMAGE_TAG [skip ci]" || echo "No changes"
+          git commit -m "chore: apply notification-service image tag $IMAGE_TAG [skip ci]" || echo "No changes"
           
           git push origin prod --force-with-lease
           echo "✅ Updated prod branch with new image tag"
