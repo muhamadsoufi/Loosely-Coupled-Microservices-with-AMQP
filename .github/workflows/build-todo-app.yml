@@ -43,20 +43,20 @@ jobs:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
           cd TodoApp
-          docker build -t $REGISTRY/$ECR_REPOSITORY/todoapp:$IMAGE_TAG .
-          echo "IMAGE_URI=$REGISTRY/$ECR_REPOSITORY/todoapp:$IMAGE_TAG" >> $GITHUB_ENV
+          docker build -t $REGISTRY/$ECR_REPOSITORY:todoapp-$IMAGE_TAG .
+          echo "IMAGE_URI=$REGISTRY/$ECR_REPOSITORY:todoapp-$IMAGE_TAG" >> $GITHUB_ENV
           echo "REGISTRY=$REGISTRY" >> $GITHUB_ENV
 
       - name: Push image to Amazon ECR
         run: |
-          docker push ${{ env.REGISTRY }}/$ECR_REPOSITORY/todoapp:$IMAGE_TAG
+          docker push ${{ env.REGISTRY }}/$ECR_REPOSITORY:todoapp-$IMAGE_TAG
           echo "Image pushed: ${{ env.IMAGE_URI }}"
 
       - name: Update Helm values
         run: |
           # Update the image tag in todo-app values.yaml
-          sed -i "s|tag: .*|tag: $IMAGE_TAG|g" helm-charts/todo-app/values.yaml
-          sed -i "s|repository: .*|repository: ${{ env.REGISTRY }}/$ECR_REPOSITORY/todoapp|g" helm-charts/todo-app/values.yaml
+          sed -i "s|tag: .*|tag: todoapp-$IMAGE_TAG|g" helm-charts/todo-app/values.yaml
+          sed -i "s|repository: .*|repository: ${{ env.REGISTRY }}/$ECR_REPOSITORY|g" helm-charts/todo-app/values.yaml
           
           # Verify changes
           cat helm-charts/todo-app/values.yaml | grep -A 2 "image:"
