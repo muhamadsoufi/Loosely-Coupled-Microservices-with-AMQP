@@ -20,7 +20,7 @@ jobs:
     
     permissions:
       id-token: write
-      contents: read
+      contents: write
     
     steps:
       - name: Checkout code
@@ -64,9 +64,12 @@ jobs:
           cat helm-charts/notification-service/values.yaml | grep -A 2 "image:"
 
       - name: Commit and push to prod branch
+        env:
+          TOKEN: ${{ secrets.TOKEN }}
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
+          git remote set-url origin https://x-access-token:${TOKEN}@github.com/${{ github.repository }}.git
           
           # Stash any uncommitted changes before switching branches
           git stash
