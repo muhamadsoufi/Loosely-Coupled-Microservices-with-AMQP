@@ -4,7 +4,7 @@ global:
 todoApp:
   image:
     repository: 940482451690.dkr.ecr.us-east-1.amazonaws.com/eks_foundation_stack_repo
-    tag: todoapp-5ff891d92146bab3b75ca50b8d9d50151487965f
+    tag: todoapp-bd29c319de293c0da275f233a1793c7701dc8c3d
     pullPolicy: IfNotPresent
   
   replicaCount: 5
