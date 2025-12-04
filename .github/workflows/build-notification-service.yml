@@ -28,6 +28,20 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: SonarQube Code Analysis
+        uses: sonarsource/sonarqube-scan-action@master
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        with:
+          projectBaseDir: notification-service
+          args: >
+            -Dsonar.projectKey=notification-service
+            -Dsonar.sources=.
+            -Dsonar.python.version=3.11
+        continue-on-error: true
+
+        
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
