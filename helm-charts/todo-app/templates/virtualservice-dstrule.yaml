@@ -1,7 +1,7 @@
 apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
-  name: todo-vs
+  name: todo-app
   namespace: microservices
 spec:
   hosts:
