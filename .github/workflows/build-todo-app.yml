@@ -28,6 +28,21 @@ jobs:
         with:
           fetch-depth: 0
 
+
+      - name: SonarQube Code Analysis
+        uses: sonarsource/sonarqube-scan-action@master
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        with:
+          projectBaseDir: TodoApp
+          args: >
+            -Dsonar.projectKey=todo-app
+            -Dsonar.sources=.
+            -Dsonar.cs.dotcover.reportsPaths=coverage.xml
+        continue-on-error: true
+
+        
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -51,6 +66,7 @@ jobs:
         run: |
           docker push ${{ env.REGISTRY }}/$ECR_REPOSITORY:todoapp-$IMAGE_TAG
           echo "Image pushed: ${{ env.IMAGE_URI }}"
+
 
       - name: Update Helm values
         run: |

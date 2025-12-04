@@ -7,7 +7,7 @@ todoApp:
     tag: todoapp-be9d1410ac4fb2cc530413487ee73eb730d4bf74
     pullPolicy: IfNotPresent
   
-  replicaCount: 1
+  replicaCount: 5
   port: 5000
   
   service:

@@ -1,0 +1,22 @@
+  apiVersion: flagger.app/v1beta1
+  kind: Canary
+  metadata:
+    name: todo-app
+    namespace: microservices
+  spec:
+    targetRef:
+      apiVersion: apps/v1
+      kind: Deployment
+      name: todo-app
+    service:
+      port: 5000
+      targetPort: 5000
+      gateways:
+        - istio-system/main-gateway
+      hosts:
+        - "todo.cicd.click"
+    analysis:
+      interval: 5m                   # ← check every 5 minutes
+      threshold: 3                   # ← allow 3 failures before rollback
+      maxWeight: 100                  # ← max traffic to canary before promoting
+      stepWeight: 30      
