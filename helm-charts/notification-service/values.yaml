@@ -4,7 +4,7 @@ global:
 notificationService:
   image:
     repository: 940482451690.dkr.ecr.us-east-1.amazonaws.com/eks_foundation_stack_repo
-    tag: notifservice-be9d1410ac4fb2cc530413487ee73eb730d4bf74
+    tag: notifservice-7537b9e01c5b8a9860084c36d6297f4189158529
     pullPolicy: IfNotPresent
   
   replicaCount: 1
