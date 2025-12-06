@@ -138,9 +138,7 @@ const TodoApp = ({baseUrl}) => {
         if (filter === 'completed') return item.isCompleted;
         return true;
     });
-    setInterval(() => {
-        location.reload();
-    }, 2000);
+    
     return (
         <div className='todo-app-wrapper'>
             <div className='todo-decorative-circle circle-1'></div>
@@ -150,7 +148,7 @@ const TodoApp = ({baseUrl}) => {
             <div className='todo-app-container'>
                 <div className='todo-header'>
                     <div className='header-content'>
-                        <h1 className='todo-title'>✨ TaskMaster V3</h1>
+                        <h1 className='todo-title'>✨ TaskMaster V5</h1>
                         <p className='todo-subtitle'>Organize • Track • Accomplish</p>
                     </div>
                     <div className='header-icon'>📋</div>
