@@ -66,7 +66,7 @@ jobs:
         uses: aquasecurity/trivy-action@0.20.0
         with:
           scan-type: 'image'
-          image-ref: $REGISTRY/$ECR_REPOSITORY:notifservice-$IMAGE_TAG
+          image-ref: "${{ env.REGISTRY }}/${{ env.ECR_REPOSITORY }}:notifservice-${{ env.IMAGE_TAG }}"
           format: 'table'
           exit-code: '1'
           severity: 'HIGH,CRITICAL'
