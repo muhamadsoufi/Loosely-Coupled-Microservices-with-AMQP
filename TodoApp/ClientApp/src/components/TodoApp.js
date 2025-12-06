@@ -148,7 +148,7 @@ const TodoApp = ({baseUrl}) => {
             <div className='todo-app-container'>
                 <div className='todo-header'>
                     <div className='header-content'>
-                        <h1 className='todo-title'>✨ TaskMaster</h1>
+                        <h1 className='todo-title'>✨ TaskMaster V2</h1>
                         <p className='todo-subtitle'>Organize • Track • Accomplish</p>
                     </div>
                     <div className='header-icon'>📋</div>
