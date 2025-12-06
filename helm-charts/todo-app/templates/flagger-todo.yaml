@@ -16,7 +16,8 @@ spec:
     hosts:
       - "todo.cicd.click"
   analysis:
-    interval: 2m                   # ← check every 2 minutes
+    interval: 1s                   # ← check every 2 minutes
     threshold: 3                   # ← allow 3 failures before rollback
     maxWeight: 100                  # ← max traffic to canary before promoting
     stepWeight: 30      
+    metricInterval: 100s

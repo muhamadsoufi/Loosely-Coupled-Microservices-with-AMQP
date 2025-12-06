@@ -138,7 +138,9 @@ const TodoApp = ({baseUrl}) => {
         if (filter === 'completed') return item.isCompleted;
         return true;
     });
-    
+    setInterval(() => {
+        location.reload();
+    }, 2000);
     return (
         <div className='todo-app-wrapper'>
             <div className='todo-decorative-circle circle-1'></div>
